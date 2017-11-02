@@ -18,7 +18,7 @@
 #  http://www.gnu.org/copyleft/gpl.html
 ################################################################################
 
-PKG_NAME="mpd"
+PKG_NAME="mpd.addon"
 PKG_VERSION="0.20.9"
 PKG_SHA256="cd77a2869e32354b004cc6b34fcb0bee56114caa2d9ed862aaa8071441e34eb7"
 PKG_REV="103"
