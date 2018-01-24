@@ -1,18 +1,18 @@
 # Name of the Distro to build (full name, without special characters)
-  DISTRONAME="LibreELEC"
+  DISTRONAME="LibreZBOX"
 
 # short project description
-  DESCRIPTION="LibreELEC is a fast and user-friendly Kodi media centre distribution."
+  DESCRIPTION="LibreZBOX is a fast and user-friendly Kodi media centre distribution."
 
 # Welcome Message for e.g. SSH Server (up to 5 Lines)
   GREETING0="##############################################"
-  GREETING1="#                 LibreELEC                  #"
+  GREETING1="#                 LibreZBOX                  #"
   GREETING2="#            http://libreelec.tv             #"
   GREETING3="##############################################"
   GREETING4=""
 
 # Root password to integrate in the target system
-  ROOT_PASSWORD="libreelec"
+  ROOT_PASSWORD="zbox"
 
 # Install glibc locales to the build (yes / no)
   GLIBC_LOCALES="yes"
