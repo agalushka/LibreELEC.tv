@@ -1,0 +1,189 @@
+#!/bin/bash
+
+################################################################################
+#      This file is part of LibreELEC - https://libreelec.tv
+#      Copyright (C) 2018-Present Team LibreELEC
+#
+#  LibreELEC is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  LibreELEC is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with LibreELEC.  If not, see <http://www.gnu.org/licenses/>.
+################################################################################
+
+# set variables
+  LE_TMP=$(mktemp -d)
+  SAVE_ERROR="$LE_TMP/save_error"
+
+  if [ -z "$SYSTEM_SIZE" -o -z "$SYSTEM_PART_START" ]; then
+    echo "mkimage: SYSTEM_SIZE and SYSTEM_PART_START must be configured!"
+    exit 1
+  fi
+
+  DISK_LABEL=msdos
+
+  STORAGE_SIZE=32 # STORAGE_SIZE must be >= 32 !
+
+  DISK_START_PADDING=$(( ($SYSTEM_PART_START + 2048 - 1) / 2048 ))
+  DISK_GPT_PADDING=1
+  DISK_SIZE=$(( $DISK_START_PADDING + $SYSTEM_SIZE + $STORAGE_SIZE + $DISK_GPT_PADDING ))
+  DISK="$TARGET_IMG/$IMAGE_NAME.img"
+
+# functions
+  cleanup() {
+    echo "image: cleanup..."
+    rm -rf "$LE_TMP"
+    echo
+    exit
+  }
+
+  show_error() {
+    echo "image: error happen..."
+    echo
+    cat "$SAVE_ERROR"
+    echo
+    cleanup
+    exit
+  }
+
+trap cleanup SIGINT
+
+# generate volume id for fat partition
+  UUID_1=$(date '+%d%m')
+  UUID_2=$(date '+%M%S')
+  FAT_SERIAL_NUMBER="${UUID_1}${UUID_2}"
+  UUID_SYSTEM="${UUID_1}-${UUID_2}"
+  FAT_VOLUME_LABEL="LIBREELEC"
+  STORAGE_VOLUME_LABEL="STORAGE"
+
+# create an image
+  echo
+  echo "image: creating file $(basename $DISK)..."
+  dd if=/dev/zero of="$DISK" bs=1M count="$DISK_SIZE" conv=fsync >"$SAVE_ERROR" 2>&1 || show_error
+
+# write a disklabel
+  echo "image: creating $DISK_LABEL partition table..."
+  parted -s "$DISK" mklabel $DISK_LABEL
+  sync
+
+# create part1
+  echo "image: creating part1..."
+  SYSTEM_PART_END=$(( $SYSTEM_PART_START + ($SYSTEM_SIZE * 1024 * 1024 / 512) - 1 ))
+  parted -s "$DISK" -a min unit s mkpart primary fat32 $SYSTEM_PART_START $SYSTEM_PART_END
+  parted -s "$DISK" set 1 boot on
+  sync
+
+# create part2
+  echo "image: creating part2..."
+  STORAGE_PART_START=$(( $SYSTEM_PART_END + 1 ))
+  STORAGE_PART_END=$(( $STORAGE_PART_START + ($STORAGE_SIZE * 1024 * 1024 / 512) - 1 ))
+  parted -s "$DISK" -a min unit s mkpart primary ext4 $STORAGE_PART_START $STORAGE_PART_END
+  sync
+
+# create filesystem on part1
+  echo "image: creating filesystem on part1..."
+  OFFSET=$(( $SYSTEM_PART_START * 512 ))
+  HEADS=4
+  TRACKS=32
+  SECTORS=$(( $SYSTEM_SIZE * 1024 * 1024 / 512 / $HEADS / $TRACKS ))
+
+  shopt -s expand_aliases  # enables alias expansion in script
+  alias mformat="mformat -i $DISK@@$OFFSET -h $HEADS -t $TRACKS -s $SECTORS"
+  alias mcopy="mcopy -i $DISK@@$OFFSET"
+  alias mmd="mmd -i $DISK@@$OFFSET"
+
+  mformat -v "$FAT_VOLUME_LABEL" -N "$FAT_SERIAL_NUMBER" ::
+  sync
+
+  # create bootloader configuration
+  echo "image: creating bootloader configuration..."
+
+  if [ "$UBOOT_VERSION" != "vendor" ]; then
+    DTB="$($SCRIPTS/uboot_helper $PROJECT $DEVICE $UBOOT_SYSTEM dtb)"
+    if [ -f "$RELEASE_DIR/3rdparty/bootloader/$DTB" ]; then
+      mcopy $RELEASE_DIR/3rdparty/bootloader/$DTB ::
+    fi
+
+    mkdir -p "$LE_TMP"/extlinux
+
+    cat << EOF > "$LE_TMP"/extlinux/extlinux.conf
+LABEL $DISTRO
+  LINUX /$KERNEL_NAME
+  FDT /$DTB
+  APPEND boot=UUID=$UUID_SYSTEM disk=UUID=$UUID_STORAGE quiet $EXTRA_CMDLINE
+EOF
+
+    mcopy -s "$LE_TMP"/extlinux ::
+  fi
+
+  if [ -f $PROJECT_DIR/$PROJECT/devices/$DEVICE/bootloader/mkimage ]; then
+    . $PROJECT_DIR/$PROJECT/devices/$DEVICE/bootloader/mkimage
+  elif [ -f $PROJECT_DIR/$PROJECT/bootloader/mkimage ]; then
+    . $PROJECT_DIR/$PROJECT/bootloader/mkimage
+  else
+    echo "No specific mkimage script found. u-boot will not be written"
+  fi
+
+  echo "image: copying files to part1..."
+  mcopy $TARGET_IMG/$IMAGE_NAME.kernel "::/$KERNEL_NAME"
+  mcopy $TARGET_IMG/$IMAGE_NAME.system "::/SYSTEM"
+  mcopy $RELEASE_DIR/target/KERNEL.md5 "::/$KERNEL_NAME.md5"
+  mcopy $RELEASE_DIR/target/SYSTEM.md5 "::/SYSTEM.md5"
+  mcopy $RELEASE_DIR/3rdparty/bootloader/dtb.img "::/dtb.img"
+
+elif [ "$BOOTLOADER" = "u-boot" ]; then
+  echo "to make an image using u-boot UBOOT_SYSTEM must be set"
+  cleanup
+fi # bootloader
+
+# extract part2 from image to format and copy files
+  echo "image: extracting part2 from image..."
+  STORAGE_PART_COUNT=$(( $STORAGE_PART_END - $STORAGE_PART_START + 1 ))
+  sync
+  dd if="$DISK" of="$LE_TMP/part2.ext4" bs=512 skip="$STORAGE_PART_START" count="$STORAGE_PART_COUNT" conv=fsync >"$SAVE_ERROR" 2>&1 || show_error
+
+# create filesystem on part2
+  echo "image: creating filesystem on part2..."
+  mke2fs -F -q -t ext4 -m 0 "$LE_TMP/part2.ext4"
+  tune2fs -L "$STORAGE_VOLUME_LABEL" -U $UUID_STORAGE "$LE_TMP/part2.ext4" >"$SAVE_ERROR" 2>&1 || show_error
+  e2fsck -n "$LE_TMP/part2.ext4" >"$SAVE_ERROR" 2>&1 || show_error
+  sync
+
+# add resize mark
+  mkdir "$LE_TMP/part2.fs"
+  touch "$LE_TMP/part2.fs/.please_resize_me"
+  echo "image: populating filesystem on part2..."
+  populatefs -U -d "$LE_TMP/part2.fs" "$LE_TMP/part2.ext4" >"$SAVE_ERROR" 2>&1 || show_error
+  sync
+  e2fsck -n "$LE_TMP/part2.ext4" >"$SAVE_ERROR" 2>&1 || show_error
+
+# merge part2 back to disk image
+  echo "image: merging part2 back to image..."
+  dd if="$LE_TMP/part2.ext4" of="$DISK" bs=512 seek="$STORAGE_PART_START" conv=fsync,notrunc >"$SAVE_ERROR" 2>&1 || show_error
+
+# extract part1 from image to run fsck
+  echo "image: extracting part1 from image..."
+  SYSTEM_PART_COUNT=$(( $SYSTEM_PART_END - $SYSTEM_PART_START + 1 ))
+  sync
+  dd if="$DISK" of="$LE_TMP/part1.fat" bs=512 skip="$SYSTEM_PART_START" count="$SYSTEM_PART_COUNT" conv=fsync >"$SAVE_ERROR" 2>&1 || show_error
+  echo "image: checking filesystem on part1..."
+  fsck -n $LE_TMP/part1.fat >"$SAVE_ERROR" 2>&1 || show_error
+
+# gzip
+  echo "image: compressing..."
+  gzip $DISK
+
+# set owner
+  if [ -n "$SUDO_USER" ] ; then
+    chown $SUDO_USER: $DISK.gz
+  fi
+
+# cleanup
+  cleanup
