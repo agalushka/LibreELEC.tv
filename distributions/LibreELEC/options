@@ -6,13 +6,13 @@
 
 # Welcome Message for e.g. SSH Server (up to 5 Lines)
   GREETING0="##############################################"
-  GREETING1="#                 LibreELEC                  #"
+  GREETING1="#              LibreELEC ZBOX                #"
   GREETING2="#            http://libreelec.tv             #"
   GREETING3="##############################################"
   GREETING4=""
 
 # Root password to integrate in the target system
-  ROOT_PASSWORD="libreelec"
+  ROOT_PASSWORD="zbox"
 
 # Install glibc locales to the build (yes / no)
   GLIBC_LOCALES="yes"
@@ -35,32 +35,32 @@
   PULSEAUDIO_SUPPORT="yes"
 
 # build and install espeak support (yes / no)
-  ESPEAK_SUPPORT="yes"
+  ESPEAK_SUPPORT="no"
 
 # build and install with non-free support
 # (RAR compression support in KODI) (yes / no)
   KODI_NONFREE_SUPPORT="yes"
 
 # build and install with BluRay support (yes / no)
-  KODI_BLURAY_SUPPORT="yes"
+  KODI_BLURAY_SUPPORT="no"
 
 # build and install with BD+ support
 # (BD+ decryption support in KODI) (yes / no)
-  BLURAY_BDPLUS_SUPPORT="yes"
+  BLURAY_BDPLUS_SUPPORT="no"
 
 # build and install with AACS support
 # (BD decryption support in KODI) (yes / no)
-  BLURAY_AACS_SUPPORT="yes"
+  BLURAY_AACS_SUPPORT="no"
 
 # build and install with DVDCSS support
 # (DVD decryption support in KODI) (yes / no)
-  KODI_DVDCSS_SUPPORT="yes"
+  KODI_DVDCSS_SUPPORT="no"
 
 # additional drivers to install:
 # for a list of additinoal drivers see packages/linux-drivers
 # Space separated list is supported,
 # e.g. ADDITIONAL_DRIVERS="DRIVER1 DRIVER2"
-  ADDITIONAL_DRIVERS="RTL8192CU RTL8192DU RTL8192EU RTL8188EU RTL8812AU bcm_sta"
+  ADDITIONAL_DRIVERS="RTL8192CU"
 
 # build and install bluetooth support (yes / no)
   BLUETOOTH_SUPPORT="yes"
@@ -81,7 +81,7 @@
   KODI_SSHLIB_SUPPORT="yes"
 
 # build xbmc with optical drive support (yes / no)
-  KODI_OPTICAL_SUPPORT="yes"
+  KODI_OPTICAL_SUPPORT="no"
 
 # build with AirPlay support (stream videos from iDevices to KODI) (yes / no)
   KODI_AIRPLAY_SUPPORT="yes"
@@ -108,7 +108,7 @@
   SFTP_SERVER="yes"
 
 # build and install OpenVPN support (yes / no)
-  OPENVPN_SUPPORT="yes"
+  OPENVPN_SUPPORT="no"
 
 # build and install diskmounter support (udevil)
 # this service provide auto mounting support for external drives in the
@@ -125,18 +125,18 @@
   HFSTOOLS="yes"
 
 # Windowmanager to use (ratpoison / fluxbox / none)
-  WINDOWMANAGER="none"
+  WINDOWMANAGER="fluxbox"
 
 # Xorg Graphic drivers to use (all / i915,i965,r200,r300,r600,nvidia)
 # Space separated list is supported,
 # e.g. GRAPHIC_DRIVERS="i915 i965 r300 r600 radeonsi nvidia"
-  GRAPHIC_DRIVERS="nvidia-legacy"
+  GRAPHIC_DRIVERS="i915"
 
 # build and install remote support (yes / no)
   REMOTE_SUPPORT="yes"
 
 # build and install ATV IR remote support (yes / no)
-  ATVCLIENT_SUPPORT="yes"
+  ATVCLIENT_SUPPORT="no"
 
 # build and install IRServer IR/LCD support (yes / no)
   IRSERVER_SUPPORT="yes"
@@ -168,16 +168,16 @@
   INITRAMFS_PARTED_SUPPORT="no"
 
 # build with swap support (yes / no)
-  SWAP_SUPPORT="yes"
+  SWAP_SUPPORT="no"
 
 # swap support enabled per default (yes / no)
-  SWAP_ENABLED_DEFAULT="yes"
+  SWAP_ENABLED_DEFAULT="no"
 
 # swapfile size if SWAP_SUPPORT=yes in MB
-  SWAPFILESIZE="512"
+  SWAPFILESIZE="256"
 
 # build with installer (yes / no)
-  INSTALLER_SUPPORT="no"
+  INSTALLER_SUPPORT="yes"
 
 # Testpackages for development (yes / no)
   TESTING="no"
@@ -204,6 +204,5 @@
 
 # Default size of system partition, in MB, eg. 512
   SYSTEM_SIZE=512
-
 # Default system partition offset, in sectors, eg. 2048
   SYSTEM_PART_START=2048
