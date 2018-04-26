@@ -102,10 +102,10 @@
   SAMBA_SUPPORT="yes"
 
 # build and install Samba Server (yes / no)
-  SAMBA_SERVER="yes"
+  SAMBA_SERVER="no"
 
 # build and install SFTP Server (yes / no)
-  SFTP_SERVER="yes"
+  SFTP_SERVER="no"
 
 # build and install OpenVPN support (yes / no)
   OPENVPN_SUPPORT="no"
@@ -193,6 +193,7 @@
 
 # Distribution Specific source location
   DISTRO_MIRROR="http://sources.libreelec.tv/mirror"
+  DEVEL_SRC="http://sources.libreelec.tv/devel"
   DISTRO_SRC="http://sources.libreelec.tv/$LIBREELEC_VERSION"
 
 # Addon Server Url
